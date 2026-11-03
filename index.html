@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Trading — Sebastian Mabunda</title>
+<meta name="description" content="An autonomous trading research desk: it finds strategy ideas, backtests them by the thousand, lets only the survivors trade on paper, and runs the best on funded accounts.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2313223B'/%3E%3Cpath d='M6 9h20l-7 8v6l-6 3v-9z' fill='%23D9962B'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF1F5; --paper-2:#E2E8EF; --ink:#13223B; --slate:#5B6B80; --rule:#C9D2DD;
+  --gate:#D9962B; --gain:#1E8A6E; --loss:#C0463B; --card:#F7F9FB;
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Source Serif 4",Georgia,serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 18px/1.62 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--gate);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+.measure{max-width:68ch}
+
+/* Header */
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+.mark{font:600 17px/1 var(--display);letter-spacing:-.01em;text-decoration:none}
+.mark small{font:400 15px var(--body);color:var(--slate);margin-left:8px}
+.top nav{display:flex;gap:22px;font:400 15px var(--display)}
+.top nav a{text-decoration:none;color:var(--slate)}
+.top nav a:hover{color:var(--ink)}
+
+/* Hero */
+.hero{padding:44px 0 8px}
+.hero h1{font:800 clamp(40px,6.4vw,82px)/.98 var(--display);letter-spacing:-.035em;margin:0 0 22px;max-width:15ch}
+.hero .lede{font-size:21px;line-height:1.55;color:#24364F;max-width:60ch;margin:0 0 30px}
+.actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.btn{font:600 16px/1 var(--display);padding:15px 22px;border-radius:999px;text-decoration:none;display:inline-flex;align-items:center;gap:10px}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:#1F3558}
+.btn.ghost{border:1.5px solid var(--ink)}
+.btn.ghost:hover{background:var(--paper-2)}
+
+/* Funnel */
+.funnel{margin:46px 0 10px;position:relative}
+.funnel canvas{width:100%;height:300px;display:block}
+.stages{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:6px}
+.stage .n{font:800 clamp(24px,3.2vw,40px)/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stage .t{font:400 15px/1.35 var(--body);color:var(--slate);margin-top:6px;max-width:22ch}
+.stage.live .n{color:var(--gain)}
+.funnel-note{font-size:14px;color:var(--slate);margin:14px 0 0}
+
+/* Sections */
+section{padding:84px 0 0}
+h2{font:800 clamp(30px,3.8vw,46px)/1.05 var(--display);letter-spacing:-.025em;margin:0 0 16px}
+h3{font:600 22px/1.2 var(--display);letter-spacing:-.01em;margin:0 0 8px}
+.intro{color:#24364F;margin:0 0 36px}
+
+/* Steps: a real sequence, so numbered */
+.steps{list-style:none;padding:0;margin:0;counter-reset:s;display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1.5px solid var(--ink)}
+.steps li{counter-increment:s;padding:24px 26px 30px 0;border-bottom:1px solid var(--rule)}
+.steps li:not(:nth-child(3n)){border-right:1px solid var(--rule)}
+.steps li:not(:nth-child(3n+1)){padding-left:26px}
+.steps li::before{content:counter(s);font:800 44px/1 var(--display);color:var(--gate);display:block;margin-bottom:14px}
+.steps p{margin:0 0 10px;font-size:17px}
+.steps .clever{font-size:15.5px;color:var(--slate);font-style:italic;margin:0}
+
+/* Tour: mirrors the dashboard's own tab bar */
+.tabbar{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1.5px solid var(--ink);margin-bottom:0}
+.tabbar button{font:600 15px/1 var(--display);background:transparent;border:1.5px solid transparent;border-bottom:none;color:var(--slate);padding:13px 16px;border-radius:10px 10px 0 0;cursor:pointer;position:relative;bottom:-1.5px}
+.tabbar button[aria-selected="true"]{background:var(--card);color:var(--ink);border-color:var(--ink);border-bottom:1.5px solid var(--card)}
+.tabbar button:hover{color:var(--ink)}
+.panel{background:var(--card);border:1.5px solid var(--ink);border-top:none;border-radius:0 0 14px 14px;padding:26px;display:grid;grid-template-columns:1.45fr 1fr;gap:30px;align-items:start}
+.panel[hidden]{display:none}
+.media{border-radius:8px;overflow:hidden;background:#0d1117;box-shadow:0 1px 0 var(--rule)}
+.media img,.media video{display:block;width:100%;height:auto}
+.panel h3{margin-top:2px}
+.panel p{margin:0 0 14px;font-size:17px}
+.panel .why{border-left:3px solid var(--gate);padding:2px 0 2px 14px;font-size:16px;color:#24364F}
+.panel .open{font:600 15px var(--display);display:inline-block;margin-top:6px}
+
+.explainer{margin:0 0 44px;max-width:900px}
+.explainer figcaption{font-size:15px;color:var(--slate);margin-top:10px}
+
+/* Numbers */
+.numbers{display:grid;grid-template-columns:repeat(4,1fr);border-top:1.5px solid var(--ink)}
+.numbers div{padding:22px 18px 24px 0;border-bottom:1px solid var(--rule)}
+.numbers dt{font:800 clamp(28px,3.4vw,42px)/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.numbers dd{margin:8px 0 0;font-size:15.5px;color:var(--slate);max-width:24ch}
+.honest{margin-top:30px;background:var(--paper-2);border-radius:12px;padding:22px 24px;max-width:78ch}
+.honest p{margin:0;font-size:17px}
+
+/* Split: me vs AI */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.split ul{margin:0;padding-left:20px}
+.split li{margin-bottom:10px;font-size:17px}
+
+footer{margin:96px 0 0;padding:28px 0 48px;border-top:1px solid var(--rule);color:var(--slate);font-size:15px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+@media (max-width:860px){
+  .steps{grid-template-columns:1fr}
+  .steps li{padding:22px 0 26px!important;border-right:none!important}
+  .panel{grid-template-columns:1fr;padding:18px}
+  .numbers{grid-template-columns:repeat(2,1fr)}
+  .split{grid-template-columns:1fr;gap:24px}
+  .stages{grid-template-columns:repeat(2,1fr)}
+  .stage.live{grid-column:span 2}
+  .funnel canvas{height:200px}
+  .top nav{display:none}
+  .tabbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .tabbar button{white-space:nowrap;flex:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="mark" href="#">Hermes Trading <small>by Sebastian Mabunda</small></a>
+    <nav aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#tour">Dashboard tour</a>
+      <a href="#proof">Proof</a>
+      <a href="#built">How I built it</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>A trading desk that researches, tests and trades on its own.</h1>
+      <p class="lede">I built Hermes, a system that runs 24/7 without me in the loop. It collects strategy ideas, backtests them by the thousand, lets only the survivors trade on paper, and puts the best on funded trading accounts under strict risk rules. Every step is automated, and every promotion has to get past rules written in code.</p>
+      <div class="actions">
+        <a class="btn primary" href="dashboard/?tour=1">Explore the live dashboard</a>
+        <a class="btn ghost" href="#tour">See what each part does</a>
+      </div>
+
+      <figure class="funnel" aria-label="How many strategies survive each stage">
+        <canvas id="funnel" role="img" aria-label="Animated funnel: thousands of backtests flow through strict gates; a few hundred reach paper trading and a handful reach live accounts."></canvas>
+        <div class="stages">
+          <div class="stage"><div class="n">1,722</div><div class="t">strategy ideas collected and tracked</div></div>
+          <div class="stage"><div class="n">94,880</div><div class="t">backtests run on TradingView</div></div>
+          <div class="stage"><div class="n">7 gates</div><div class="t">every candidate must pass, enforced in code</div></div>
+          <div class="stage"><div class="n">321</div><div class="t">strategies trading on paper right now</div></div>
+          <div class="stage live"><div class="n">6</div><div class="t">funded accounts trading live</div></div>
+        </div>
+        <figcaption class="funnel-note">Figures from the live system on 3 November 2026.</figcaption>
+      </figure>
+    </div>
+
+    <section id="how">
+      <h2>How it runs, end to end</h2>
+      <p class="intro measure">Six stages run on a schedule, every day. People decide the rules and approve real capital; the machine does the rest.</p>
+      <figure class="explainer" data-clip="explainer">
+        <div class="media"><video controls preload="metadata" playsinline poster="media/clip_explainer.jpg"><source src="media/clip_explainer.mp4" type="video/mp4"></video></div>
+        <figcaption>The whole system in about a minute.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li>
+          <h3>Collect ideas</h3>
+          <p>Strategies come in from academic papers, published TradingView scripts, YouTube strategy channels and an AI that writes its own hypotheses.</p>
+          <p class="clever">Each idea is turned into runnable TradingView code automatically, then queued for testing.</p>
+        </li>
+        <li>
+          <h3>Test at scale</h3>
+          <p>A robot drives TradingView, sweeping every idea across grids of settings and across markets: gold, indices, crypto, oil and currencies. Around a hundred sweeps finish every day.</p>
+          <p class="clever">Promising near-misses are re-tested on a finer grid automatically, at most twice.</p>
+        </li>
+        <li>
+          <h3>Pass the gates</h3>
+          <p>A candidate needs at least 200 trades, a profit factor of 1.10 or better, drawdown under 10% and real trading costs priced in. It is then re-run on its full history, and refused if its last six months are fading.</p>
+          <p class="clever">The gatekeeper is code. Even the AI that manages the pipeline cannot argue its way past it.</p>
+        </li>
+        <li>
+          <h3>Trade on paper</h3>
+          <p>Survivors get a live TradingView alert. Every signal is traded on paper against real prices, so each strategy builds a forward record before it touches money.</p>
+          <p class="clever">A nightly monitor retires paper strategies whose forward results break from their backtest.</p>
+        </li>
+        <li>
+          <h3>Trade live</h3>
+          <p>The strongest strategies run on funded prop-firm accounts through MetaTrader 5. Each account is an isolated seat with its own risk limit and daily loss floor.</p>
+          <p class="clever">One strategy per slot, and never opposite positions on the same market across accounts.</p>
+        </li>
+        <li>
+          <h3>Review and learn</h3>
+          <p>An AI chief executive reviews the whole pipeline twice a day, promotes what passed and escalates the rest. Every closed live trade is summarised on Telegram.</p>
+          <p class="clever">Lessons are written down, and refusals are remembered so the same mistake is not re-proposed.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section id="tour">
+      <h2>A tour of the dashboard</h2>
+      <p class="intro measure">This is the control room I use every day. The tabs below show the six parts that matter most. Each clip is the real dashboard; open the live copy to click around yourself.</p>
+
+      <div class="tabbar" role="tablist" aria-label="Dashboard tabs">
+        <button role="tab" id="t-live" aria-controls="p-live" aria-selected="true">Live Capital</button>
+        <button role="tab" id="t-calendar" aria-controls="p-calendar" aria-selected="false" tabindex="-1">Calendar</button>
+        <button role="tab" id="t-overview" aria-controls="p-overview" aria-selected="false" tabindex="-1">Paper Overview</button>
+        <button role="tab" id="t-trades" aria-controls="p-trades" aria-selected="false" tabindex="-1">Recent Trades</button>
+        <button role="tab" id="t-slots" aria-controls="p-slots" aria-selected="false" tabindex="-1">Strategy Slots</button>
+        <button role="tab" id="t-pipeline" aria-controls="p-pipeline" aria-selected="false" tabindex="-1">Pipeline</button>
+      </div>
+
+      <div class="panel" role="tabpanel" id="p-live" aria-labelledby="t-live">
+        <div class="media" data-clip="live"><video controls preload="metadata" playsinline poster="media/clip_live.jpg"><source src="media/clip_live.mp4" type="video/mp4"></video></div>
+        <div>
+          <h3>The funded accounts, live</h3>
+          <p>Six prop-firm challenge accounts, each its own seat. You see every open position with its stop and target, each account's equity, and how much room is left before a firm rule would be broken.</p>
+          <p class="why">Seats never share credentials or positions, and each trade is sized from the cash it would lose at its stop, so one bad trade can't sink an account.</p>
+          <a class="open" href="dashboard/?tab=live">Open this tab</a>
+        </div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="p-calendar" aria-labelledby="t-calendar" hidden>
+        <div class="media" data-clip="calendar"><video controls preload="metadata" playsinline poster="media/clip_calendar.jpg"><source src="media/clip_calendar.mp4" type="video/mp4"></video></div>
+        <div>
+          <h3>Every live trading day</h3>
+          <p>Each closed live trade lands on a calendar: daily results, win rate, best and worst day, a cumulative curve and the full trade log, filterable by account.</p>
+          <p class="why">Days follow the prop firm's own day boundary, not midnight, so these numbers match exactly what the firm checks its rules against.</p>
+          <a class="open" href="dashboard/?tab=calendar">Open this tab</a>
+        </div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="p-overview" aria-labelledby="t-overview" hidden>
+        <div class="media" data-clip="overview"><video controls preload="metadata" playsinline poster="media/clip_overview.jpg"><source src="media/clip_overview.mp4" type="video/mp4"></video></div>
+        <div>
+          <h3>The proving ground</h3>
+          <p>All 321 paper strategies in one view: closed trades, win rate, open positions, and a market-regime panel that marks each market bull or bear using a statistical model refreshed every night.</p>
+          <p class="why">Paper trades fire from the same alerts that would drive live orders, so a strategy earns live money on forward evidence, not on its backtest.</p>
+          <a class="open" href="dashboard/?tab=overview">Open this tab</a>
+        </div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="p-trades" aria-labelledby="t-trades" hidden>
+        <div class="media" data-clip="trades"><video controls preload="metadata" playsinline poster="media/clip_trades.jpg"><source src="media/clip_trades.mp4" type="video/mp4"></video></div>
+        <div>
+          <h3>What just happened</h3>
+          <p>The last 20 trades the system closed, with entry, exit, timing and the reason: target hit, stop hit, or the strategy's own exit signal.</p>
+          <p class="why">Every exit reason is recorded, so a strategy that keeps getting stopped out shows up within days.</p>
+          <a class="open" href="dashboard/?tab=trades">Open this tab</a>
+        </div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="p-slots" aria-labelledby="t-slots" hidden>
+        <div class="media" data-clip="slots"><video controls preload="metadata" playsinline poster="media/clip_slots.jpg"><source src="media/clip_slots.mp4" type="video/mp4"></video></div>
+        <div>
+          <h3>Every strategy, ranked</h3>
+          <p>Each paper strategy with its forward trades, win rate, profit factor, return and drawdown, next to the profit factor its backtest promised.</p>
+          <p class="why">Comparing forward against backtest side by side is how the system spots strategies that only worked on paper history, and retires them.</p>
+          <a class="open" href="dashboard/?tab=slots">Open this tab</a>
+        </div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="p-pipeline" aria-labelledby="t-pipeline" hidden>
+        <div class="media" data-clip="pipeline"><video controls preload="metadata" playsinline poster="media/clip_pipeline.jpg"><source src="media/clip_pipeline.mp4" type="video/mp4"></video></div>
+        <div>
+          <h3>The research factory</h3>
+          <p>Ideas waiting to be tested, the queue of backtests running on TradingView, the candidates escalated for a decision, and the schedule of the ten autonomous agents that keep it all moving.</p>
+          <p class="why">The AI that manages this can promote a strategy only through the code gatekeeper, and every live capital change still needs my approval.</p>
+          <a class="open" href="dashboard/?tab=pipeline">Open this tab</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="proof">
+      <h2>Proof you can check</h2>
+      <p class="intro measure">Numbers from the system's own records on 3 November 2026. I'm happy to walk through any of them live.</p>
+      <dl class="numbers">
+        <div><dt>2,758</dt><dd>commits since 27 May 2026, on 160 separate days</dd></div>
+        <div><dt>6,532</dt><dd>completed parameter sweeps</dd></div>
+        <div><dt>94,880</dt><dd>individual backtests graded</dd></div>
+        <div><dt>1,722</dt><dd>strategies tracked from idea to retirement</dd></div>
+        <div><dt>321</dt><dd>strategies paper trading, each with its own live alert</dd></div>
+        <div><dt>6</dt><dd>funded accounts trading live, each isolated</dd></div>
+        <div><dt>45</dt><dd>scheduled jobs running the pipeline</dd></div>
+        <div><dt>152</dt><dd>automated test files guarding the code</dd></div>
+      </dl>
+      <div class="honest">
+        <p>This page is not a claim of a profitable track record. Most ideas fail, the paper book includes hundreds of experiments, and the live accounts are currently below their starting balances. The dashboard shows all of that as it is. What I'm showing is the machine: how it finds, tests, deploys and polices strategies on its own, with risk rules that hold.</p>
+      </div>
+    </section>
+
+    <section id="built">
+      <h2>How I built it</h2>
+      <p class="intro measure">I built Hermes alone, working with AI the way a lead works with a team. Here is the honest split.</p>
+      <div class="split">
+        <div>
+          <h3>What I did</h3>
+          <ul>
+            <li>Designed the architecture: the stages, the gates, the risk rules and how accounts stay isolated.</li>
+            <li>Wrote the rules every agent works inside, including what AI may never do on its own.</li>
+            <li>Decide what gets built next, approve every change to live capital, and rule on escalations.</li>
+            <li>Run it daily: diagnose production incidents, read the reports, retire what isn't working.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What AI did</h3>
+          <ul>
+            <li>Claude Code wrote most of the code under my direction and handles maintenance sessions.</li>
+            <li>Scheduled AI agents run the reviews: the chief-executive agent, the backtest reviewer and the hypothesis writer.</li>
+            <li>An automation layer drives TradingView for the backtests and the alerts.</li>
+            <li>Every AI action that changes money or promotes a strategy goes through checks written in code.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Hermes Trading, built by Sebastian Mabunda, 2026.</span>
+    <span>The dashboard copy is a frozen snapshot with account numbers and firm names removed.</span>
+  </footer>
+</div>
+
+<script>
+// Tabs (WAI-ARIA pattern: arrow keys move between tabs)
+(function(){
+  const tabs=[...document.querySelectorAll('[role="tab"]')];
+  function select(tab){
+    tabs.forEach(t=>{const on=t===tab;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden=!on;});
+  }
+  tabs.forEach((t,i)=>{
+    t.addEventListener('click',()=>select(t));
+    t.addEventListener('keydown',e=>{
+      const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0; if(!d)return;
+      const n=tabs[(i+d+tabs.length)%tabs.length]; select(n); n.focus(); e.preventDefault();
+    });
+  });
+})();
+
+// Funnel: one orchestrated moment. Dots stream left to right; each gate lets fewer through.
+(function(){
+  const c=document.getElementById('funnel'); if(!c)return;
+  const ctx=c.getContext('2d'); const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css=getComputedStyle(document.documentElement);
+  const ink=css.getPropertyValue('--ink').trim(), gate=css.getPropertyValue('--gate').trim(),
+        gain=css.getPropertyValue('--gain').trim(), slate=css.getPropertyValue('--slate').trim(), rule=css.getPropertyValue('--rule').trim();
+  let W,H,dpr; const gates=[.2,.4,.6,.8]; const pass=[.85,.5,.22,.18];
+  function size(){dpr=Math.min(2,devicePixelRatio||1);W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
+  size(); addEventListener('resize',()=>{size(); if(!busy)requestAnimationFrame(frame);});
+  let busy=true;
+  // the channel narrows at each gate
+  const halfAt=x=>{const k=[.46,.4,.3,.19,.1,.07];const i=Math.min(4,Math.floor(x*5));const f=x*5-i;return (k[i]+(k[i+1]-k[i])*f)*H;};
+  const dots=[]; let t0=performance.now(), spawned=0; const LIMIT=900;
+  function spawn(){const y=(Math.random()*2-1);dots.push({x:0,y,v:.0016+Math.random()*.0012,g:0,dead:false,a:1,rest:.9+Math.random()*.085});spawned++;}
+  if(still){ // reduced motion: draw the end state once — survivors resting at the live end
+    for(let i=0;i<LIMIT;i++){let g=0;while(g<4&&Math.random()<pass[g])g++; if(g>=4)dots.push({x:.9+Math.random()*.085,y:Math.random()*2-1,g:4,dead:false,a:1,v:0,rest:1});}
+  }
+  function frame(now){
+    ctx.clearRect(0,0,W,H);
+    // channel outline
+    ctx.beginPath();for(let x=0;x<=1.0001;x+=.01){ctx.lineTo(x*W,H/2-halfAt(x));}
+    for(let x=1;x>=-.0001;x-=.01){ctx.lineTo(x*W,H/2+halfAt(x));}ctx.closePath();
+    ctx.fillStyle='rgba(19,34,59,.045)';ctx.fill();ctx.strokeStyle=rule;ctx.lineWidth=1;ctx.stroke();
+    // gates
+    gates.forEach(g=>{const h=halfAt(g);ctx.strokeStyle=gate;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(g*W,H/2-h-8);ctx.lineTo(g*W,H/2+h+8);ctx.stroke();});
+    if(!still && spawned<LIMIT && now-t0<9000){for(let i=0;i<3;i++)spawn();}
+    let moving=0;
+    for(const d of dots){
+      if(!d.dead){
+        if(d.g>=4&&d.x>=d.rest){d.x=d.rest;}            // survivors settle at the live end
+        else {d.x+=d.v;moving++; if(d.g<4&&d.x>=gates[d.g]){ if(Math.random()>pass[d.g]){d.dead=true;} else d.g++; }}
+      }
+      else {d.a-=.03;moving++;}
+      if(d.a<=0)continue;
+      const y=H/2+d.y*halfAt(Math.min(d.x,1))*.92;
+      ctx.globalAlpha=Math.max(0,d.a)*(d.dead?.55:1);
+      ctx.fillStyle=d.dead?slate:(d.g>=4?gain:ink);
+      ctx.beginPath();ctx.arc(Math.min(d.x,1)*W,y,d.g>=4?3.2:2,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    for(let i=dots.length-1;i>=0;i--)if(dots[i].a<=0)dots.splice(i,1);
+    busy=!still && (moving>0 || now-t0<9000);
+    if(busy) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  // Replays the flow from empty; the demo video calls this when the narration reaches the backtests.
+  window.hermesFunnelReplay=function(){dots.length=0;spawned=0;t0=performance.now();if(!busy){busy=true;requestAnimationFrame(frame);}};
+})();
+</script>
+</body>
+</html>
